@@ -204,3 +204,4 @@ def get_module_name() -> str:
     _, idb_name = os.path.split(idb_path)
     name, _ = os.path.splitext(idb_name)
     return name
+

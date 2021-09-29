@@ -11,6 +11,7 @@ from .utils import get_module_name
 
 logger = logging.getLogger(__name__)
 
+
 # -----------------------------------------------------------------------
 class FwHuntRule:
     """FwHunt rule class"""
@@ -254,6 +255,9 @@ class UefiR2Info(QtWidgets.QTreeWidget):
         self.item_font = None
         self._load_item_font()
 
+        # Data loaded from JSON
+        self.tree: dict = None
+
         self.reset_view()
 
     def install_rule(self, rule):
@@ -282,6 +286,7 @@ class UefiR2Info(QtWidgets.QTreeWidget):
         if "guid" in data:
             guid = data["guid"]
             self.rule.append_guid(guid["value"], guid["name"])
+            return True
 
         if "protocol" in data:
             protocol = data["protocol"]
@@ -452,20 +457,67 @@ class UefiR2Info(QtWidgets.QTreeWidget):
             self._add_item("guid", element["guid"], child_item)
             self._add_item("service", element["service"]["name"], child_item)
 
-    def update_tree(self, tree: dict):
-        """Update tree content (with new data from uefi_r2 analysis result)"""
-
-        logger.info(json.dumps(tree, indent=2))
+    def _load_tree(self, tree: dict):
 
         # need to handle each type of data separately
         if "ppi_list" in tree and len(tree["ppi_list"]) > 0:
             self._load_ppi_list(tree["ppi_list"])
+
         if "p_guids" in tree and len(tree["p_guids"]) > 0:
             self._load_guids(tree["p_guids"])
+
         if "protocols" in tree and len(tree["protocols"]) > 0:
             self._load_protocols(tree["protocols"])
+
         if "nvram_vars" in tree and len(tree["nvram_vars"]) > 0:
             self._load_nvram_vars(tree["nvram_vars"])
+
+    def update_search(self, search_data: list):
+        """Update tree content (with new data from search query)"""
+
+        self.reset_view()
+
+        tree = dict(
+            {
+                "ppi_list": list(),
+                "p_guids": list(),
+                "protocols": list(),
+                "nvram_vars": list(),
+            }
+        )
+
+        # generate tree right format
+        # (to avoid this we need to change the format in the
+        # uefi_f2 analysis report)
+        for data in search_data:
+
+            if "guid" in data:
+                if data["guid"] not in tree["p_guids"]:
+                    tree["p_guids"].append(data["guid"])
+                continue
+
+            if "protocol" in data:
+                if data["protocol"] not in tree["protocols"]:
+                    tree["protocols"].append(data["protocol"])
+                continue
+
+            if "ppi" in data:
+                if data["ppi"] not in tree["ppi_list"]:
+                    tree["ppi_list"].append(data["ppi"])
+                continue
+
+            if "nvram_var" in data:
+                if data["nvram_var"] not in tree["nvram_vars"]:
+                    tree["nvram_vars"].append(data["nvram_var"])
+                continue
+
+        self._load_tree(tree)
+
+    def update_tree(self):
+        """Update tree content (with new data from uefi_r2 analysis result)"""
+
+        self.reset_view()
+        self._load_tree(self.tree)
 
 
 # -----------------------------------------------------------------------
@@ -504,6 +556,9 @@ class FwHuntForm(ida_kernwin.PluginForm):
         self.label_info = None  # QtWidgets.QLabel
         self.label_preview = None  # QtWidgets.QLabel
 
+        # Search box
+        self.search = None  # QtWidgets.QLineEdit
+
         # Buttons
         self.button_load = None  # QtWidgets.QPushButton
         self.button_reset = None  # QtWidgets.QPushButton
@@ -525,6 +580,7 @@ class FwHuntForm(ida_kernwin.PluginForm):
         self._load_font()
         self._load_label_preview()
         self._load_label_info()
+        self._load_search()
         self._load_main_elements()
         self._load_parent()
 
@@ -558,8 +614,18 @@ class FwHuntForm(ida_kernwin.PluginForm):
         if data is None:
             return False
 
-        self.uefi_r2_info.reset_view()
-        self.uefi_r2_info.update_tree(data)
+        tree = dict()
+        if "protocols" in data:
+            tree["protocols"] = data["protocols"]
+        if "nvram_vars" in data:
+            tree["nvram_vars"] = data["nvram_vars"]
+        if "p_guids" in data:
+            tree["p_guids"] = data["p_guids"]
+        if "ppi_list" in data:
+            tree["ppi_list"] = data["ppi_list"]
+
+        self.uefi_r2_info.tree = tree
+        self.uefi_r2_info.update_tree()
 
         return True
 
@@ -593,6 +659,42 @@ class FwHuntForm(ida_kernwin.PluginForm):
             f.write(current_rule)
 
         return True
+
+    def slot_search(self, text) -> bool:
+        """Search query handler"""
+
+        logger.info(f"Search query: {text}")
+
+        # set original data (uefi_r2_info.tree)
+        self.uefi_r2_info.update_tree()
+
+        # find elements by search query
+        elements = self.uefi_r2_info.findItems(
+            text,
+            QtCore.Qt.MatchContains | QtCore.Qt.MatchRecursive,
+            column=0,
+        )
+
+        # generate data by search query
+        search_data = list()
+        for element in elements:
+            if element.parent() is None:
+                continue
+            data = element.parent().data(0, 0x100)
+            if data is None:
+                continue
+            search_data.append(data)
+
+        self.uefi_r2_info.update_search(search_data)
+
+        return True
+
+    def _load_search(self):
+        line = QtWidgets.QLineEdit()
+        line.setPlaceholderText("search...")
+        line.textChanged.connect(self.slot_search)
+
+        self.search = line
 
     def _load_buttons(self):
         load_button = QtWidgets.QPushButton("Load")
@@ -639,12 +741,17 @@ class FwHuntForm(ida_kernwin.PluginForm):
         layout = QtWidgets.QHBoxLayout()
 
         splitter_preview = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        layout_preview = QtWidgets.QHBoxLayout()
+        layout_preview.addWidget(self.rule_preview)
         splitter_preview.addWidget(self.label_preview)
-        splitter_preview.addWidget(self.rule_preview)
+        splitter_preview.setLayout(layout_preview)
 
         splitter_info = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        layout_info = QtWidgets.QHBoxLayout()
+        layout_info.addWidget(self.search)
+        layout_info.addWidget(self.uefi_r2_info)
         splitter_info.addWidget(self.label_info)
-        splitter_info.addWidget(self.uefi_r2_info)
+        splitter_info.setLayout(layout_info)
 
         splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         splitter.addWidget(splitter_info)

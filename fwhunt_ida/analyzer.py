@@ -33,24 +33,6 @@ class Analyzer:
         return guid_bytes
 
     @staticmethod
-    def get_guids_list(tree: dict) -> dict:
-        """Get all GUIDs from uefi_r2 report"""
-
-        guids_list = list()
-
-        for key in tree:
-            for item in tree[key]:
-                if "value" in item:
-                    guid = Analyzer.guid_bytes(item.get("value", None))
-                if "guid" in item:
-                    guid = Analyzer.guid_bytes(item.get("value", None))
-                if not guid:
-                    continue
-                guids_list.append(guid)
-
-        return guids_list
-
-    @staticmethod
     def search_bytes(data: bytes) -> list:
         """
         Find data in IDB

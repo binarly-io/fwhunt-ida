@@ -6,6 +6,7 @@ from typing import List, Optional, Tuple
 
 import ida_bytes
 import ida_funcs
+import ida_segment
 import idc
 
 logger = logging.getLogger(__name__)
@@ -205,3 +206,43 @@ def get_module_name() -> str:
     name, _ = os.path.splitext(idb_name)
     return name
 
+
+def remove_addrs(items: list) -> list:
+    """Remove address from each item
+    (since the addresses may not coincide in the radare2/rizin and IDA)"""
+
+    res = list()
+
+    for item in items:
+        if "address" in item:
+            del item["address"]
+        if item not in res:
+            res.append(item)
+
+    return res
+
+
+def get_tree(data: dict) -> dict:
+    """
+    Handle data from uefi_r2 analysis report
+
+    @param: data
+
+    @return: tree
+    """
+
+    tree = dict()
+
+    if "protocols" in data:
+        tree["protocols"] = remove_addrs(data["protocols"])
+
+    if "p_guids" in data:
+        tree["p_guids"] = remove_addrs(data["p_guids"])
+
+    if "ppi_list" in data:
+        tree["ppi_list"] = remove_addrs(data["ppi_list"])
+
+    if "nvram_vars" in data:
+        tree["nvram_vars"] = remove_addrs(data["nvram_vars"])
+
+    return tree

@@ -1,13 +1,12 @@
 import json
 import logging
-import os
 from typing import Dict, List, Optional, Tuple
 
 import ida_kernwin
-import idaapi
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-from .utils import get_module_name
+from .utils import get_module_name, get_tree
+from .analyzer import Analyzer
 
 logger = logging.getLogger(__name__)
 
@@ -268,15 +267,25 @@ class UefiR2Info(QtWidgets.QTreeWidget):
         if self.header().sectionSize(0) > UefiR2Info.MAX_SECTION_SIZE:
             self.header().resizeSection(0, UefiR2Info.MAX_SECTION_SIZE)
 
-    def slot_item_double_clicked(self):
+    def slot_item_double_clicked(self) -> bool:
         """Hanlder for item double clicked action"""
 
         logger.info("Item double clicked")
 
-    def slot_menu(self, action):
-        """Menu handler"""
+        # get data
+        data = self.selectedItems()[0].data(0, 0x100)
+        if data is None:
+            return False
 
-        logger.info("Menu handler")
+        logger.info(data)
+
+        return True
+
+    def slot_menu_rule(self, action) -> bool:
+        """Menu handler (add to rule)"""
+
+        text = action.text()
+        logger.info(f"Menu handler ({text})")
 
         # get data
         data = self.selectedItems()[0].data(0, 0x100)
@@ -305,6 +314,21 @@ class UefiR2Info(QtWidgets.QTreeWidget):
 
         return True
 
+    def slot_menu_jmp(self, action) -> bool:
+        """Menu handler (jump to)"""
+
+        text = action.text()
+        logger.info(f"Menu handler ({text})")
+
+        try:
+            addr = int(text.split()[-1], 16)
+            ida_kernwin.jumpto(addr)
+        except Exception as e:
+            logger.error(repr(e))
+            return False
+
+        return True
+
     def build_action(self, o, display, data, slot):
         action = QtWidgets.QAction(display, o)
 
@@ -324,6 +348,33 @@ class UefiR2Info(QtWidgets.QTreeWidget):
 
         return menu
 
+    def build_context_menu_jmps(self, data, pos) -> bool:
+        """Build context menu for jumps"""
+
+        gb = None
+        if "child_guid" in data:
+            gb = Analyzer.guid_bytes(data["child_guid"])
+
+        elif "child_value" in data:
+            gb = Analyzer.guid_bytes(data["child_value"])
+
+        elif "child_service" in data:
+            return True
+
+        elif "child_name" in data:
+            return True
+
+        if gb is not None:
+            addrs = Analyzer.search_bytes(gb)
+            actions = list()
+            for addr in addrs:
+                actions.append((f"Jmp to {addr:#x}", (), self.slot_menu_jmp))
+            menu_jmp = self.build_context_menu(self.parent(), actions)
+            menu_jmp.exec_(self.viewport().mapToGlobal(pos))
+            return True
+
+        return False
+
     def slot_custom_context_menu_requested(self, pos) -> bool:
         """Handler for custom context menu requested action"""
 
@@ -339,11 +390,16 @@ class UefiR2Info(QtWidgets.QTreeWidget):
 
         logger.info(f"data: {json.dumps(data)}")
 
-        actions = list()
-        actions.append(("Add to rule", (), self.slot_menu))
+        # build context menu for jumps
+        if self.build_context_menu_jmps(data, pos):
+            return True
 
-        menu = self.build_context_menu(self.parent(), actions)
-        menu.exec_(self.viewport().mapToGlobal(pos))
+        # build context menu for rule
+        actions = list()
+        actions.append(("Add to rule", (), self.slot_menu_rule))
+
+        menu_rule = self.build_context_menu(self.parent(), actions)
+        menu_rule.exec_(self.viewport().mapToGlobal(pos))
 
         return True
 
@@ -352,9 +408,6 @@ class UefiR2Info(QtWidgets.QTreeWidget):
 
         logger.info("Resize columns to content")
         self.resize_columns_to_content()
-
-    def reset_view(self):
-        self.clear()
 
     def _load_header_font(self):
         self.header_font = QtGui.QFont("Courier")
@@ -369,6 +422,9 @@ class UefiR2Info(QtWidgets.QTreeWidget):
         item = QtWidgets.QTreeWidgetItem(parent)
         item.setText(0, f"{name}: {value}")
         item.setFont(0, self.item_font)
+        item.setData(
+            0, 0x100, {f"child_{name}": value}
+        )  # add child_ prefix to distinguish from parent data
 
     def _load_ppi_list(self, info):
         parent_item = QtWidgets.QTreeWidgetItem()
@@ -519,6 +575,9 @@ class UefiR2Info(QtWidgets.QTreeWidget):
         self.reset_view()
         self._load_tree(self.tree)
 
+    def reset_view(self):
+        self.clear()
+
 
 # -----------------------------------------------------------------------
 class FwHuntRulePreview(QtWidgets.QTextEdit):
@@ -565,6 +624,9 @@ class FwHuntForm(ida_kernwin.PluginForm):
         self.button_save = None  # QtWidgets.QPushButton
         self.buttons = None  # QtWidgets.QHBoxLayout
 
+        # GUIDs addresses (for jumps)
+        self.guids: dict = Optional[Dict[str, int]]
+
     def OnCreate(self, form):
         """Called when the widget is created"""
 
@@ -599,14 +661,16 @@ class FwHuntForm(ida_kernwin.PluginForm):
 
         logger.info("Load button handler")
 
-        uefi_r2_nalysis = ida_kernwin.ask_file(0, "*.json", "uefi_r2 analysis")
-        if not os.path.isfile(uefi_r2_nalysis):
-            logger.error("Invalid path")
+        uefi_r2_analysis = ida_kernwin.ask_file(0, "*.json", "uefi_r2 analysis")
+
+        if not uefi_r2_analysis:
+            logger.error("No file chosen")
             return False
 
         data = None
+
         try:
-            with open(uefi_r2_nalysis, "r") as f:
+            with open(uefi_r2_analysis, "r") as f:
                 data = json.load(f)
         except Exception as e:
             logger.error(repr(e))
@@ -614,15 +678,11 @@ class FwHuntForm(ida_kernwin.PluginForm):
         if data is None:
             return False
 
-        tree = dict()
-        if "protocols" in data:
-            tree["protocols"] = data["protocols"]
-        if "nvram_vars" in data:
-            tree["nvram_vars"] = data["nvram_vars"]
-        if "p_guids" in data:
-            tree["p_guids"] = data["p_guids"]
-        if "ppi_list" in data:
-            tree["ppi_list"] = data["ppi_list"]
+        logger.info(json.dumps(data, indent=2))
+
+        tree = get_tree(data)
+
+        logger.info(json.dumps(tree, indent=2))
 
         self.uefi_r2_info.tree = tree
         self.uefi_r2_info.update_tree()
@@ -635,6 +695,23 @@ class FwHuntForm(ida_kernwin.PluginForm):
         logger.info("Reset button handler")
         self.uefi_r2_info.rule.clear()
 
+    def slot_analyze(self) -> bool:
+        """Analyze button handler"""
+
+        logger.info("Analyze button handler")
+
+        if self.guids is not None:
+            ida_kernwin.info("Analysis is no longer required")
+            return True
+
+        if self.uefi_r2_info.tree is None:
+            ida_kernwin.info("First load the uefi_r2 analysis (press Load button)")
+            return False
+
+        self.guids = get_guids(self.uefi_r2_info.tree)
+
+        return True
+
     def slot_help(self):
         """Help button handler"""
 
@@ -645,7 +722,7 @@ class FwHuntForm(ida_kernwin.PluginForm):
         """Save button handler"""
 
         if self.uefi_r2_info.rule.is_empty():
-            idaapi.info("FwHunt rule is empty")
+            ida_kernwin.info("FwHunt rule is empty")
             return False
 
         rule_path = self.ask_yml_file()
@@ -662,8 +739,6 @@ class FwHuntForm(ida_kernwin.PluginForm):
 
     def slot_search(self, text) -> bool:
         """Search query handler"""
-
-        logger.info(f"Search query: {text}")
 
         # set original data (uefi_r2_info.tree)
         self.uefi_r2_info.update_tree()
@@ -699,11 +774,13 @@ class FwHuntForm(ida_kernwin.PluginForm):
     def _load_buttons(self):
         load_button = QtWidgets.QPushButton("Load")
         reset_button = QtWidgets.QPushButton("Reset")
+        analyze_button = QtWidgets.QPushButton("Analyze")
         help_button = QtWidgets.QPushButton("Help")
         save_button = QtWidgets.QPushButton("Save")
 
         load_button.clicked.connect(self.slot_load)
         reset_button.clicked.connect(self.slot_reset)
+        analyze_button.clicked.connect(self.slot_analyze)
         help_button.clicked.connect(self.slot_help)
         save_button.clicked.connect(self.slot_save)
 

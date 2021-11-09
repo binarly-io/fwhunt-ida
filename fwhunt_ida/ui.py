@@ -695,29 +695,6 @@ class FwHuntForm(ida_kernwin.PluginForm):
         logger.info("Reset button handler")
         self.uefi_r2_info.rule.clear()
 
-    def slot_analyze(self) -> bool:
-        """Analyze button handler"""
-
-        logger.info("Analyze button handler")
-
-        if self.guids is not None:
-            ida_kernwin.info("Analysis is no longer required")
-            return True
-
-        if self.uefi_r2_info.tree is None:
-            ida_kernwin.info("First load the uefi_r2 analysis (press Load button)")
-            return False
-
-        self.guids = get_guids(self.uefi_r2_info.tree)
-
-        return True
-
-    def slot_help(self):
-        """Help button handler"""
-
-        logger.info("Help button handler")
-        # TODO: add instruction here
-
     def slot_save(self) -> bool:
         """Save button handler"""
 
@@ -775,25 +752,20 @@ class FwHuntForm(ida_kernwin.PluginForm):
         load_button = QtWidgets.QPushButton("Load")
         reset_button = QtWidgets.QPushButton("Reset")
         analyze_button = QtWidgets.QPushButton("Analyze")
-        help_button = QtWidgets.QPushButton("Help")
         save_button = QtWidgets.QPushButton("Save")
 
         load_button.clicked.connect(self.slot_load)
         reset_button.clicked.connect(self.slot_reset)
-        analyze_button.clicked.connect(self.slot_analyze)
-        help_button.clicked.connect(self.slot_help)
         save_button.clicked.connect(self.slot_save)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(load_button)
         layout.addWidget(reset_button)
-        layout.addWidget(help_button)
-        layout.addStretch(3)
+        layout.addStretch(2)
         layout.addWidget(save_button, alignment=QtCore.Qt.AlignRight)
 
         self.button_load = load_button
         self.button_reset = reset_button
-        self.button_help = help_button
         self.button_save = save_button
         self.buttons = layout
 

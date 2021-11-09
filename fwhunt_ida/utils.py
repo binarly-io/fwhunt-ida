@@ -6,7 +6,6 @@ from typing import List, Optional, Tuple
 
 import ida_bytes
 import ida_funcs
-import ida_segment
 import idc
 
 logger = logging.getLogger(__name__)
@@ -76,9 +75,6 @@ def get_wide_string(ea: int) -> Optional[str]:
     if data is None:
         return None
 
-    if data[1] != b"\x00":
-        return None
-
     wide_end = data.find(b"\x00\x00")
     if wide_end < 0:
         wide_end = max_len * 2
@@ -86,7 +82,7 @@ def get_wide_string(ea: int) -> Optional[str]:
     wide_string = data[: wide_end + 1]
     try:
         return wide_string.decode("utf-16le")
-    except UnicodeDecodeError as _:
+    except UnicodeDecodeError:
         return None
 
 
@@ -112,33 +108,8 @@ def get_ascii_string(ea: int) -> Optional[str]:
     ascii_string = data[:ascii_end]
     try:
         return ascii_string.decode("utf-8")
-    except UnicodeDecodeError as _:
+    except UnicodeDecodeError:
         return None
-
-
-def get_string(ea: int) -> Tuple[Optional[str], Optional[str]]:
-    """
-    Get string located at specific address (max length: 512)
-
-    @param ea: address
-
-    @return: tuple(string, string_type)
-    """
-
-    string = None
-    string_type = None
-
-    string = get_wide_string(ea)
-    if string is not None:
-        string_type = "wide"
-        return string, string_type
-
-    string = get_ascii_string(ea)
-    if string is not None:
-        string_type = "ascii"
-        return string, string_type
-
-    return string, string_type
 
 
 def get_hex_string(start_ea: int, end_ea: int) -> Optional[str]:
@@ -164,7 +135,7 @@ def get_hex_string(start_ea: int, end_ea: int) -> Optional[str]:
 
 def get_code(start_ea: int, end_ea: int) -> Tuple[Optional[str], Optional[List[str]]]:
     """
-    Get hex string located at specific address (max length: 512)
+    Get code from start_ea to end_ea
 
     @param start_ea: start address
     @param end_ea: end address

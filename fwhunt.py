@@ -53,6 +53,9 @@ class AddEfiGuid(FwHuntAction):
 
         logger.info(f"GUID: {guid} # {name}")
 
+        if guid is None:
+            return False
+
         # append GUID to rule
         g_rule.append_guid(guid, name)
 
@@ -60,10 +63,10 @@ class AddEfiGuid(FwHuntAction):
 
 
 # -----------------------------------------------------------------------
-class AddString(FwHuntAction):
+class AddAsciiString(FwHuntAction):
 
-    name = f"AddString"
-    description = "add ascii or wide string to detection rule"
+    name = f"AddAsciiString"
+    description = "add ascii string to detection rule"
     hotkey = str()
 
     def __init__(self):
@@ -75,24 +78,56 @@ class AddString(FwHuntAction):
 
         ea = ida_kernwin.get_screen_ea()
         logger.info(f"Address: {ea:#x}")
-        string, string_type = utils.get_string(ea)
+        string = utils.get_ascii_string(ea)
 
         if string is None:
             return False
 
         # remove \n
         if "\n" in string:
-            index = string.find("\n")
-            string = string[:index]
-        logger.info(f"String: {string} # {string_type}")
+            string = string.split("\n")[0]
+        logger.info(f"String: {string}")
 
-        if string_type == "ascii":
-            # append ascii string to rule
-            g_rule.append_string(string)
+        if not len(string):
+            return False
 
-        if string_type == "wide" and string is not None:
-            # append wide string to rule
-            g_rule.append_wide_string(string)
+        # append ascii string to rule
+        g_rule.append_string(string)
+
+        return True
+
+
+# -----------------------------------------------------------------------
+class AddWideString(FwHuntAction):
+
+    name = f"AddWideString"
+    description = "add wide string to detection rule"
+    hotkey = str()
+
+    def __init__(self):
+        super().__init__()
+
+    def activate(self, ctx) -> bool:
+        if g_rule.editor is None:
+            return False
+
+        ea = ida_kernwin.get_screen_ea()
+        logger.info(f"Address: {ea:#x}")
+        string = utils.get_wide_string(ea)
+
+        if string is None:
+            return False
+
+        # remove \n
+        if "\n" in string:
+            string = string.split("\n")[0]
+        logger.info(f"Wide string: {string}")
+
+        if not len(string):
+            return False
+
+        # append wide string to rule
+        g_rule.append_wide_string(string)
 
         return True
 
@@ -140,6 +175,12 @@ class AddCodeSnippet(FwHuntAction):
 
         start_ea = idc.read_selection_start()
         end_ea = idc.read_selection_end()
+
+        # if selected only one line
+        if start_ea == idc.BADADDR and end_ea == idc.BADADDR:
+            start_ea = ida_kernwin.get_screen_ea()
+            end_ea = idc.next_head(start_ea)
+
         logger.info(f"Start code address: {start_ea:#x}")
         logger.info(f"End code address: {end_ea:#x}")
         code, comments = utils.get_code(start_ea, end_ea)
@@ -172,10 +213,6 @@ class FwHuntHelper(ida_idaapi.plugin_t):
     @staticmethod
     def init():
         ida_kernwin.msg(f"\n{NAME} ({VERSION})\n")
-        FwHuntHelper.register_action(AddEfiGuid)
-        FwHuntHelper.register_action(AddString)
-        FwHuntHelper.register_action(AddHexString)
-        FwHuntHelper.register_action(AddCodeSnippet)
 
         return ida_idaapi.PLUGIN_KEEP
 
@@ -186,15 +223,24 @@ class FwHuntHelper(ida_idaapi.plugin_t):
         if g_form is not None:
             g_form.Close(options=0)
 
+        # initialize the form
         g_form = ui.FwHuntForm()
         g_form.Show("FwHunt rule generator")
         g_rule.install_editor(g_form.rule_preview)
         g_form.uefi_r2_info.install_rule(g_rule)
 
+        # add actions
+        FwHuntHelper.register_action(AddEfiGuid)
+        FwHuntHelper.register_action(AddAsciiString)
+        FwHuntHelper.register_action(AddWideString)
+        FwHuntHelper.register_action(AddHexString)
+        FwHuntHelper.register_action(AddCodeSnippet)
+
     @staticmethod
     def term():
         ida_kernwin.unregister_action(AddEfiGuid.name)
-        ida_kernwin.unregister_action(AddString.name)
+        ida_kernwin.unregister_action(AddAsciiString.name)
+        ida_kernwin.unregister_action(AddWideString.name)
         ida_kernwin.unregister_action(AddHexString.name)
         ida_kernwin.unregister_action(AddCodeSnippet.name)
 

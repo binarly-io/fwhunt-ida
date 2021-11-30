@@ -32,3 +32,4 @@ MANIFEST
 .vscode/
 test/
 rules/
+.DS_Store

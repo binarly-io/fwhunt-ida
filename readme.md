@@ -1,5 +1,7 @@
 ## FwHunt IDA plugin
 
+[![Watch the demo](https://img.https://youtu.be/V0-le7z_ojE/default.jpg)](https://youtu.be/V0-le7z_ojE)
+
 ### Installation
 
 Copy `fwhunt.py` and `plugin` to IDA plugins directory

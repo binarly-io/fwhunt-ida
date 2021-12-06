@@ -4,7 +4,7 @@
 
 ### Installation
 
-Copy `fwhunt.py` and `plugin` to IDA plugins directory
+Copy `fwhunt.py` and `fwhunt` to IDA plugins directory
 
 ### Usage
 

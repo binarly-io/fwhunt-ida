@@ -5,7 +5,7 @@ import ida_idaapi
 import ida_kernwin
 import idc
 
-from fwhunt_ida import ui, utils
+from fwhunt import ui, utils
 
 NAME = "FwHunt"
 AUTHOR = "https://github.com/binarly-io/"

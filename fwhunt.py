@@ -251,3 +251,4 @@ def PLUGIN_ENTRY():
         return FwHuntHelper()
     except Exception as e:
         logger.error(f"{str(e)}\n{traceback.format_exc()}")
+    return None

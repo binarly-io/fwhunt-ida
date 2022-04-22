@@ -1,8 +1,6 @@
 import logging
 import traceback
 
-from black import main
-
 import ida_idaapi
 import ida_kernwin
 import idc

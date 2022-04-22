@@ -246,9 +246,21 @@ class FwHuntHelper(ida_idaapi.plugin_t):
 
 
 # -----------------------------------------------------------------------
+# Entry for plugin
 def PLUGIN_ENTRY():
     try:
         return FwHuntHelper()
     except Exception as e:
         logger.error(f"{str(e)}\n{traceback.format_exc()}")
     return None
+
+
+# -----------------------------------------------------------------------
+# Entry for IDAPyhton script
+def main():
+    FwHuntHelper.init()
+    FwHuntHelper.run(arg=0)
+
+
+if __name__ == "__main__":
+    main()

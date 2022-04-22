@@ -123,9 +123,12 @@ class FwHuntRule:
 
         # set meta
         rule_content = f"{rule_content}  meta:\n"
-        rule_content = f"{rule_content}    name: ...\n"
-        rule_content = f"{rule_content}    namespace: ...\n"
+        rule_content = f"{rule_content}    author: ...\n"
+        rule_content = f"{rule_content}    name: {rule_name}\n"
+        rule_content = f"{rule_content}    namespace: fwhunt-ida\n"
         rule_content = f"{rule_content}    description: ...\n"
+        rule_content = f"{rule_content}    volume guids:\n"
+        rule_content = f"{rule_content}      - ...\n"
 
         # set GUIDs
         if len(self._guids) > 0:

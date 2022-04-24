@@ -133,82 +133,75 @@ class FwHuntRule:
         # set GUIDs
         if len(self._guids) > 0:
             rule_content = f"{rule_content}  guids:\n"
-            for i in range(len(self._guids)):
-                guid, guid_name = self._guids[i]
-                rule_content = f"{rule_content}    - {i:#d}:\n"
+            rule_content = f"{rule_content}    and:\n"
+            for (guid, guid_name) in self._guids:
                 rule_content = f"{rule_content}      - name: {guid_name}\n"
-                rule_content = f"{rule_content}      - value: {guid}\n"
+                rule_content = f"{rule_content}        value: {guid}\n"
 
         # set protocols
         if len(self._protocols) > 0:
             rule_content = f"{rule_content}  protocols:\n"
-            for i in range(len(self._protocols)):
-                protocol = self._protocols[i]
+            rule_content = f"{rule_content}    and:\n"
+            for protocol in self._protocols:
                 name = protocol["name"]
                 value = protocol["value"]
                 service = protocol["service"]
-                rule_content = f"{rule_content}    - {i:#d}:\n"
                 rule_content = f"{rule_content}      - name: {name}\n"
-                rule_content = f"{rule_content}      - value: {value}\n"
-                rule_content = f"{rule_content}      - service:\n"
-                rule_content = f"{rule_content}        - name: {service}\n"
+                rule_content = f"{rule_content}        value: {value}\n"
+                rule_content = f"{rule_content}        service:\n"
+                rule_content = f"{rule_content}          name: {service}\n"
 
         # set ppi
         if len(self._ppi_list) > 0:
             rule_content = f"{rule_content}  ppi:\n"
-            for i in range(len(self._ppi_list)):
-                ppi = self._ppi_list[i]
+            rule_content = f"{rule_content}    and:\n"
+            for ppi in self._ppi_list:
                 name = ppi["name"]
                 value = ppi["value"]
                 service = ppi["service"]
-                rule_content = f"{rule_content}    - {i:#d}:\n"
                 rule_content = f"{rule_content}      - name: {name}\n"
-                rule_content = f"{rule_content}      - value: {value}\n"
-                rule_content = f"{rule_content}      - service:\n"
-                rule_content = f"{rule_content}        - name: {service}\n"
+                rule_content = f"{rule_content}        value: {value}\n"
+                rule_content = f"{rule_content}        service:\n"
+                rule_content = f"{rule_content}          name: {service}\n"
 
         # set nvram
         if len(self._nvram_vars) > 0:
             rule_content = f"{rule_content}  nvram:\n"
-            for i in range(len(self._nvram_vars)):
-                nvram_var = self._nvram_vars[i]
+            rule_content = f"{rule_content}    and:\n"
+            for nvram_var in self._nvram_vars:
                 name = nvram_var["name"]
                 guid = nvram_var["guid"]
                 service = nvram_var["service"]["name"]
-                rule_content = f"{rule_content}    - {i:#d}:\n"
                 rule_content = f"{rule_content}      - name: {name}\n"
-                rule_content = f"{rule_content}      - guid: {guid}\n"
-                rule_content = f"{rule_content}      - service:\n"
-                rule_content = f"{rule_content}        - name: {service}\n"
+                rule_content = f"{rule_content}        guid: {guid}\n"
+                rule_content = f"{rule_content}        service:\n"
+                rule_content = f"{rule_content}          name: {service}\n"
 
         # set ascii strings
         if len(self._strings) > 0:
             rule_content = f"{rule_content}  strings:\n"
-            for i in range(len(self._strings)):
-                string = self._strings[i]
-                rule_content = f"{rule_content}    {i:#d}: {string}\n"
+            rule_content = f"{rule_content}    and:\n"
+            for string in self._strings:
+                rule_content = f"{rule_content}    - {string}\n"
 
         # set wide strings
         if len(self._wide_strings) > 0:
             rule_content = f"{rule_content}  wide_strings:\n"
-            for i in range(len(self._wide_strings)):
-                wide_string = self._wide_strings[i]
-                rule_content = f"{rule_content}    {i:#d}: {wide_string}\n"
+            rule_content = f"{rule_content}    and:\n"
+            for wide_string in self._wide_strings:
+                rule_content = f"{rule_content}      - utf16le: {wide_string}\n"
 
         # set hex strings
         if len(self._hex_strings) > 0 or len(self._code) > 0:
             rule_content = f"{rule_content}  hex_strings:\n"
+            rule_content = f"{rule_content}    and:\n"
+            for hex_string in self._hex_strings:
+                rule_content = f"{rule_content}      - {hex_string}\n"
 
-            for i in range(len(self._hex_strings)):
-                hex_string = self._hex_strings[i]
-                rule_content = f"{rule_content}    {i:#d}: {hex_string}\n"
-
-            for i in range(len(self._code)):
-                index = i + len(self._hex_strings)
-                hex_string, code_comments = self._code[i]
-                rule_content = f"{rule_content}    {index:#d}: {hex_string}\n"
+            for (hex_string, code_comments) in self._code:
+                rule_content = f"{rule_content}      - {hex_string}\n"
                 for comment in code_comments:
-                    rule_content = f"{rule_content}        {comment}\n"
+                    rule_content = f"{rule_content}          {comment}\n"
 
         return rule_content
 

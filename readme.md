@@ -8,9 +8,8 @@ Copy `fwhunt.py` and `fwhunt` to IDA plugins directory
 
 ### Usage
 
-* Analyze UEFI driver with [uefi_r2](https://github.com/binarly-io/uefi_r2)
-    - example: `python3 /tmp/uefi_r2/uefi_r2_analyzer.py analyze-image DxeCore -o DxeCoreUefiR2.json`
-* Open analyzed driver in IDA
+* Analyze UEFI module with [fwhunt-scan](https://github.com/binarly-io/fwhunt-scan)
+* Open analyzed module in IDA
 * Open `Edit/Plugins/FwHunt` (at this step you will see `FwHunt rule generator` window):
 
     ![img1.png](rsrc/img1.png)

@@ -6,7 +6,10 @@ from typing import List, Optional, Tuple
 
 import ida_bytes
 import ida_funcs
+import ida_idaapi
+import idaapi
 import idc
+import ida_ua
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +27,7 @@ def get_guid_value(ea: int) -> Optional[str]:
 
     if ida_funcs.get_func(ea) is not None:
         logger.info("Local GUIDs are not yet supported")
-        # currently uefi_r2 does not support extracting local GUIDs
+        # currently fwhunt-scan does not support extracting local GUIDs
         # for this reason, there is no need to extract here either
         return None
 
@@ -146,21 +149,51 @@ def get_code(start_ea: int, end_ea: int) -> Tuple[Optional[str], Optional[List[s
     if ida_funcs.get_func(start_ea) is None or ida_funcs.get_func(end_ea) is None:
         return None, None
 
-    data = ida_bytes.get_bytes(start_ea, end_ea - start_ea)
-    code = binascii.hexlify(data).decode()
-    comments = list()
+    reg_rsp = 4
+    reg_rbp = 5
 
-    # get comment
-    ea = start_ea
+    code = str()
     comments = list()
-    while ea < end_ea:
+    ea = start_ea
+    insn = idaapi.insn_t()
+    while ea <= end_ea:
+        size = idaapi.decode_insn(insn, ea)
+        insn_enc = ida_bytes.get_bytes(ea, size)
+
+        if insn_enc is None:
+            return str()
+
+        # add comments
         disasm_line = idc.generate_disasm_line(ea, 0)
-        ea_next = idc.next_head(ea)
+        ea_next = idc.next_head(ea, ida_idaapi.BADADDR)
         opcodes = ida_bytes.get_bytes(ea, ea_next - ea)
         opcodes_hex = binascii.hexlify(opcodes).decode()
         opcodes_hex = opcodes_hex + " " * (32 - len(opcodes_hex))
         comments.append(f"# {opcodes_hex}    {disasm_line}")
-        ea = ea_next
+
+        # add code
+        offb_first = 0
+        # parse instruction and check if we need put the holes]
+        o_displ_regs = set()
+        for i in range(8):  # parse operands
+            # print(f"{ea:#x}, operand {i}: {OPERANDS[insn.ops[i].type]}")
+            if insn.ops[i].type in [ida_ua.o_displ, ida_ua.o_phrase]:
+                o_displ_regs.add(insn.ops[i].reg)
+            if insn.ops[i].type == ida_ua.o_void:
+                break
+            if insn.ops[i].offb:
+                offb_first = insn.ops[i].offb
+                break
+        holes = not (len(o_displ_regs) and not (o_displ_regs & {reg_rsp, reg_rbp}))
+        if holes and offb_first:
+            before = "".join([f"{b:02x}" for b in insn_enc[:offb_first]])
+            after = "".join([".." for _ in range(size - offb_first)])
+            dstr = f"{before}{after}"
+        else:
+            dstr = "".join([f"{b:02x}" for b in insn_enc])
+        print(f"{ea:#x}: {dstr}")
+        code += dstr
+        ea = idc.next_head(ea, ida_idaapi.BADADDR)
 
     return code, comments
 
@@ -195,7 +228,7 @@ def remove_addrs(items: list) -> list:
 
 def get_tree(data: dict) -> dict:
     """
-    Handle data from uefi_r2 analysis report
+    Handle data from fwhunt-scan analysis report
 
     @param: data
 

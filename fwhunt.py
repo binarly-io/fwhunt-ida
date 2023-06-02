@@ -227,7 +227,7 @@ class FwHuntHelper(ida_idaapi.plugin_t):
         g_form = ui.FwHuntForm()
         g_form.Show("FwHunt rule generator")
         g_rule.install_editor(g_form.rule_preview)
-        g_form.uefi_r2_info.install_rule(g_rule)
+        g_form.fwhunt_scan_info.install_rule(g_rule)
 
         # add actions
         FwHuntHelper.register_action(AddEfiGuid)
@@ -258,8 +258,11 @@ def PLUGIN_ENTRY():
 # -----------------------------------------------------------------------
 # Entry for IDAPyhton script
 def main():
-    FwHuntHelper.init()
-    FwHuntHelper.run(arg=0)
+    try:
+        FwHuntHelper.init()
+        FwHuntHelper.run(arg=0)
+    except Exception as e:
+        logger.error(f"{str(e)}\n{traceback.format_exc()}")
 
 
 if __name__ == "__main__":

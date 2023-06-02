@@ -24,7 +24,7 @@ def get_guid_value(ea: int) -> Optional[str]:
 
     if ida_funcs.get_func(ea) is not None:
         logger.info("Local GUIDs are not yet supported")
-        # currently uefi_r2 does not support extracting local GUIDs
+        # currently fwhunt-scan does not support extracting local GUIDs
         # for this reason, there is no need to extract here either
         return None
 
@@ -195,7 +195,7 @@ def remove_addrs(items: list) -> list:
 
 def get_tree(data: dict) -> dict:
     """
-    Handle data from uefi_r2 analysis report
+    Handle data from fwhunt-scan analysis report
 
     @param: data
 

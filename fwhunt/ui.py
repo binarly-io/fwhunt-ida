@@ -5,8 +5,8 @@ from typing import Dict, List, Optional, Tuple
 import ida_kernwin
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-from .utils import get_module_name, get_tree
 from .analyzer import Analyzer
+from .utils import get_module_name, get_tree
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class FwHuntRule:
         self._wide_strings: List[str] = list()
         self._hex_strings: List[str] = list()
 
-        # from uefi_r2_info (guids already exist)
+        # from fwhunt-scan (guids already exist)
         self._protocols: List[Dict] = list()
         self._ppi_list: List[Dict] = list()
         self._nvram_vars: List[Dict] = list()
@@ -566,7 +566,7 @@ class UefiR2Info(QtWidgets.QTreeWidget):
         self._load_tree(tree)
 
     def update_tree(self):
-        """Update tree content (with new data from uefi_r2 analysis result)"""
+        """Update tree content (with new data from fwhunt-scan analysis result)"""
 
         self.reset_view()
         self._load_tree(self.tree)
@@ -601,7 +601,7 @@ class FwHuntForm(ida_kernwin.PluginForm):
 
         # Tree and editor
         self.rule_preview: FwHuntRulePreview = None
-        self.uefi_r2_info: UefiR2Info = None
+        self.fwhunt_scan_info: UefiR2Info = None
         self._main_elements = None  # QtWidgets.QHBoxLayout
 
         # Labels font
@@ -631,7 +631,7 @@ class FwHuntForm(ida_kernwin.PluginForm):
 
         # Init tree and editor
         self.rule_preview = FwHuntRulePreview(parent=self.parent)
-        self.uefi_r2_info = UefiR2Info(parent=self.parent)
+        self.fwhunt_scan_info = UefiR2Info(parent=self.parent)
 
         # Add all elements to form
         self._load_buttons()
@@ -644,7 +644,7 @@ class FwHuntForm(ida_kernwin.PluginForm):
 
     def ask_json_file(self):
         return QtWidgets.QFileDialog.getSaveFileName(
-            None, "Select JSON file with uefi_r2 analysis result", "", "*.json"
+            None, "Select JSON file with fwhunt-scan analysis result", "", "*.json"
         )[0]
 
     def ask_yml_file(self):
@@ -657,16 +657,16 @@ class FwHuntForm(ida_kernwin.PluginForm):
 
         logger.info("Load button handler")
 
-        uefi_r2_analysis = ida_kernwin.ask_file(0, "*.json", "uefi_r2 analysis")
+        fwhunt_scan_analysis = ida_kernwin.ask_file(0, "*.json", "fwhunt-scan analysis")
 
-        if not uefi_r2_analysis:
+        if not fwhunt_scan_analysis:
             logger.error("No file chosen")
             return False
 
         data = None
 
         try:
-            with open(uefi_r2_analysis, "r") as f:
+            with open(fwhunt_scan_analysis, "r") as f:
                 data = json.load(f)
         except Exception as e:
             logger.error(repr(e))
@@ -680,8 +680,8 @@ class FwHuntForm(ida_kernwin.PluginForm):
 
         logger.info(json.dumps(tree, indent=2))
 
-        self.uefi_r2_info.tree = tree
-        self.uefi_r2_info.update_tree()
+        self.fwhunt_scan_info.tree = tree
+        self.fwhunt_scan_info.update_tree()
 
         return True
 
@@ -689,12 +689,12 @@ class FwHuntForm(ida_kernwin.PluginForm):
         """Reset button handler"""
 
         logger.info("Reset button handler")
-        self.uefi_r2_info.rule.clear()
+        self.fwhunt_scan_info.rule.clear()
 
     def slot_save(self) -> bool:
         """Save button handler"""
 
-        if self.uefi_r2_info.rule.is_empty():
+        if self.fwhunt_scan_info.rule.is_empty():
             ida_kernwin.info("FwHunt rule is empty")
             return False
 
@@ -704,7 +704,7 @@ class FwHuntForm(ida_kernwin.PluginForm):
         if not rule_path:
             return False
 
-        current_rule = self.uefi_r2_info.rule.generate_rule()
+        current_rule = self.fwhunt_scan_info.rule.generate_rule()
         with open(rule_path, "w") as f:
             f.write(current_rule)
 
@@ -713,11 +713,11 @@ class FwHuntForm(ida_kernwin.PluginForm):
     def slot_search(self, text) -> bool:
         """Search query handler"""
 
-        # set original data (uefi_r2_info.tree)
-        self.uefi_r2_info.update_tree()
+        # set original data (fwhunt_scan_info.tree)
+        self.fwhunt_scan_info.update_tree()
 
         # find elements by search query
-        elements = self.uefi_r2_info.findItems(
+        elements = self.fwhunt_scan_info.findItems(
             text,
             QtCore.Qt.MatchContains | QtCore.Qt.MatchRecursive,
             column=0,
@@ -733,7 +733,7 @@ class FwHuntForm(ida_kernwin.PluginForm):
                 continue
             search_data.append(data)
 
-        self.uefi_r2_info.update_search(search_data)
+        self.fwhunt_scan_info.update_search(search_data)
 
         return True
 
@@ -779,7 +779,7 @@ class FwHuntForm(ida_kernwin.PluginForm):
     def _load_label_info(self):
         self.label_info = QtWidgets.QLabel()
         self.label_info.setAlignment(QtCore.Qt.AlignCenter)
-        self.label_info.setText("uefi_r2 analysis result")
+        self.label_info.setText("fwhunt-scan analysis result")
         self.label_info.setFont(self.font)
 
     def _load_main_elements(self):
@@ -794,7 +794,7 @@ class FwHuntForm(ida_kernwin.PluginForm):
         splitter_info = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         layout_info = QtWidgets.QHBoxLayout()
         layout_info.addWidget(self.search)
-        layout_info.addWidget(self.uefi_r2_info)
+        layout_info.addWidget(self.fwhunt_scan_info)
         splitter_info.addWidget(self.label_info)
         splitter_info.setLayout(layout_info)
 

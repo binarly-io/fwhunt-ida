@@ -258,8 +258,11 @@ def PLUGIN_ENTRY():
 # -----------------------------------------------------------------------
 # Entry for IDAPyhton script
 def main():
-    FwHuntHelper.init()
-    FwHuntHelper.run(arg=0)
+    try:
+        FwHuntHelper.init()
+        FwHuntHelper.run(arg=0)
+    except Exception as e:
+        logger.error(f"{str(e)}\n{traceback.format_exc()}")
 
 
 if __name__ == "__main__":

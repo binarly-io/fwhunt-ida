@@ -192,14 +192,18 @@ class FwHuntRule:
                 rule_content = f"{rule_content}      - utf16le: {wide_string}\n"
 
         # set hex strings
-        if len(self._hex_strings) > 0 or len(self._code) > 0:
+        if len(self._hex_strings) > 0:
             rule_content = f"{rule_content}  hex_strings:\n"
             rule_content = f"{rule_content}    and:\n"
             for hex_string in self._hex_strings:
                 rule_content = f"{rule_content}      - {hex_string}\n"
 
-            for (hex_string, code_comments) in self._code:
-                rule_content = f"{rule_content}      - {hex_string}\n"
+        # set code
+        if len(self._code) > 0:
+            rule_content = f"{rule_content}  code:\n"
+            rule_content = f"{rule_content}    and:\n"
+            for (pattern, code_comments) in self._code:
+                rule_content = f"{rule_content}      - pattern: {pattern}\n"
                 for comment in code_comments:
                     rule_content = f"{rule_content}          {comment}\n"
 

@@ -161,7 +161,7 @@ def get_code(start_ea: int, end_ea: int) -> Tuple[Optional[str], Optional[List[s
         insn_enc = ida_bytes.get_bytes(ea, size)
 
         if insn_enc is None:
-            return str()
+            return None, None
 
         # add comments
         disasm_line = idc.generate_disasm_line(ea, 0)
@@ -176,7 +176,6 @@ def get_code(start_ea: int, end_ea: int) -> Tuple[Optional[str], Optional[List[s
         # parse instruction and check if we need put the holes]
         o_displ_regs = set()
         for i in range(8):  # parse operands
-            # print(f"{ea:#x}, operand {i}: {OPERANDS[insn.ops[i].type]}")
             if insn.ops[i].type in [ida_ua.o_displ, ida_ua.o_phrase]:
                 o_displ_regs.add(insn.ops[i].reg)
             if insn.ops[i].type == ida_ua.o_void:
@@ -191,11 +190,10 @@ def get_code(start_ea: int, end_ea: int) -> Tuple[Optional[str], Optional[List[s
             dstr = f"{before}{after}"
         else:
             dstr = "".join([f"{b:02x}" for b in insn_enc])
-        print(f"{ea:#x}: {dstr}")
         code += dstr
         ea = idc.next_head(ea, ida_idaapi.BADADDR)
 
-    return code, comments
+    return code.rstrip("."), comments
 
 
 def get_module_name() -> str:

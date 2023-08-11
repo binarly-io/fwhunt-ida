@@ -134,7 +134,7 @@ class FwHuntRule:
         if len(self._guids) > 0:
             rule_content = f"{rule_content}  guids:\n"
             rule_content = f"{rule_content}    and:\n"
-            for (guid, guid_name) in self._guids:
+            for guid, guid_name in self._guids:
                 rule_content = f"{rule_content}      - name: {guid_name}\n"
                 rule_content = f"{rule_content}        value: {guid}\n"
 
@@ -202,7 +202,7 @@ class FwHuntRule:
         if len(self._code) > 0:
             rule_content = f"{rule_content}  code:\n"
             rule_content = f"{rule_content}    and:\n"
-            for (pattern, code_comments) in self._code:
+            for pattern, code_comments in self._code:
                 rule_content = f"{rule_content}      - pattern: {pattern}\n"
                 for comment in code_comments:
                     rule_content = f"{rule_content}          {comment}\n"
@@ -220,7 +220,6 @@ class FwHuntRule:
 # (https://github.com/fireeye/capa/tree/master/capa/ida/plugin)
 # since the goals in the UI are similar
 class UefiR2Info(QtWidgets.QTreeWidget):
-
     MAX_SECTION_SIZE = 750
 
     def __init__(self, parent=None):
@@ -255,7 +254,7 @@ class UefiR2Info(QtWidgets.QTreeWidget):
         self._load_item_font()
 
         # Data loaded from JSON
-        self.tree: dict = None
+        self.tree: Optional[dict] = None
 
         self.reset_view()
 
@@ -513,7 +512,9 @@ class UefiR2Info(QtWidgets.QTreeWidget):
             self._add_item("guid", element["guid"], child_item)
             self._add_item("service", element["service"]["name"], child_item)
 
-    def _load_tree(self, tree: dict):
+    def _load_tree(self, tree: Optional[dict]) -> bool:
+        if tree is None:
+            return False
 
         # need to handle each type of data separately
         if "ppi_list" in tree and len(tree["ppi_list"]) > 0:
@@ -527,6 +528,8 @@ class UefiR2Info(QtWidgets.QTreeWidget):
 
         if "nvram_vars" in tree and len(tree["nvram_vars"]) > 0:
             self._load_nvram_vars(tree["nvram_vars"])
+
+        return True
 
     def update_search(self, search_data: list):
         """Update tree content (with new data from search query)"""
@@ -546,7 +549,6 @@ class UefiR2Info(QtWidgets.QTreeWidget):
         # (to avoid this we need to change the format in the
         # uefi_f2 analysis report)
         for data in search_data:
-
             if "guid" in data:
                 if data["guid"] not in tree["p_guids"]:
                     tree["p_guids"].append(data["guid"])

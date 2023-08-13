@@ -1,12 +1,11 @@
 import json
 import logging
 from typing import Dict, List, Optional, Tuple
-
 import ida_kernwin
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 from .analyzer import Analyzer
-from .utils import get_module_name, get_tree
+from .utils import get_module_name, get_tree, get_fwhunt_scan_report
 
 logger = logging.getLogger(__name__)
 
@@ -514,6 +513,7 @@ class UefiR2Info(QtWidgets.QTreeWidget):
 
     def _load_tree(self, tree: Optional[dict]) -> bool:
         if tree is None:
+            # tree is not initialized
             return False
 
         # need to handle each type of data separately
@@ -623,6 +623,7 @@ class FwHuntForm(ida_kernwin.PluginForm):
         # Buttons
         self.button_load = None  # QtWidgets.QPushButton
         self.button_reset = None  # QtWidgets.QPushButton
+        self.button_scan = None  # QtWidgets.QPushButton
         self.button_save = None  # QtWidgets.QPushButton
         self.buttons = None  # QtWidgets.QHBoxLayout
 
@@ -683,6 +684,24 @@ class FwHuntForm(ida_kernwin.PluginForm):
         logger.info(json.dumps(data, indent=2))
 
         tree = get_tree(data)
+
+        logger.info(json.dumps(tree, indent=2))
+
+        self.fwhunt_scan_info.tree = tree
+        self.fwhunt_scan_info.update_tree()
+
+        return True
+
+    def slot_scan(self) -> bool:
+        """Scan button handler"""
+
+        logger.info("Scan button handler")
+
+        summary = get_fwhunt_scan_report()
+        if summary is None:
+            return False
+
+        tree = get_tree(summary)
 
         logger.info(json.dumps(tree, indent=2))
 
@@ -752,21 +771,24 @@ class FwHuntForm(ida_kernwin.PluginForm):
 
     def _load_buttons(self):
         load_button = QtWidgets.QPushButton("Load")
+        scan_button = QtWidgets.QPushButton("Scan")
         reset_button = QtWidgets.QPushButton("Reset")
-        analyze_button = QtWidgets.QPushButton("Analyze")
         save_button = QtWidgets.QPushButton("Save")
 
         load_button.clicked.connect(self.slot_load)
+        scan_button.clicked.connect(self.slot_scan)
         reset_button.clicked.connect(self.slot_reset)
         save_button.clicked.connect(self.slot_save)
 
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(load_button)
+        layout.addWidget(scan_button)
         layout.addWidget(reset_button)
         layout.addStretch(2)
         layout.addWidget(save_button, alignment=QtCore.Qt.AlignRight)
 
         self.button_load = load_button
+        self.button_scan = scan_button
         self.button_reset = reset_button
         self.button_save = save_button
         self.buttons = layout

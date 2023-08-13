@@ -7,9 +7,10 @@ from typing import List, Optional, Tuple
 import ida_bytes
 import ida_funcs
 import ida_idaapi
+import ida_ua
 import idaapi
 import idc
-import ida_ua
+from fwhunt_scan import UefiAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -248,3 +249,19 @@ def get_tree(data: dict) -> dict:
         tree["nvram_vars"] = remove_addrs(data["nvram_vars"])
 
     return tree
+
+
+def get_fwhunt_scan_report() -> Optional[dict]:
+    """
+    Get fwhunt-scan report
+
+    @return: fwhunt-scan report for the current file or None
+    """
+
+    filename = idaapi.get_input_file_path()
+    if not os.path.isfile(filename):
+        logger.error("couldn't fild file to analyze")
+        return None
+
+    uefi_analyzer = UefiAnalyzer(image_path=filename)
+    return uefi_analyzer.get_summary()

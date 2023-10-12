@@ -181,7 +181,7 @@ class FwHuntRule:
             rule_content = f"{rule_content}  strings:\n"
             rule_content = f"{rule_content}    and:\n"
             for string in self._strings:
-                rule_content = f"{rule_content}    - {string}\n"
+                rule_content = f"{rule_content}      - {string}\n"
 
         # set wide strings
         if len(self._wide_strings) > 0:

@@ -176,15 +176,23 @@ def get_code(start_ea: int, end_ea: int) -> Tuple[Optional[str], Optional[List[s
         offb_first = 0
         # parse instruction and check if we need put the holes]
         o_displ_regs = set()
+        addrs = set()
         for i in range(8):  # parse operands
             if insn.ops[i].type in [ida_ua.o_displ, ida_ua.o_phrase]:
                 o_displ_regs.add(insn.ops[i].reg)
             if insn.ops[i].type == ida_ua.o_void:
                 break
+            if (insn.ops[i].addr is not None) and (
+                insn.ops[i].dtype in (ida_ua.dt_qword, ida_ua.dt_dword)
+            ):
+                addrs.add(insn.ops[i].addr)
             if insn.ops[i].offb:
                 offb_first = insn.ops[i].offb
                 break
-        holes = not (len(o_displ_regs) and not (o_displ_regs & {reg_rsp, reg_rbp}))
+
+        holes = len(addrs) or not (
+            len(o_displ_regs) and not (o_displ_regs & {reg_rsp, reg_rbp})
+        )
         if holes and offb_first:
             before = "".join([f"{b:02x}" for b in insn_enc[:offb_first]])
             after = "".join([".." for _ in range(size - offb_first)])

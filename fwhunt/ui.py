@@ -1,11 +1,12 @@
 import json
 import logging
 from typing import Dict, List, Optional, Tuple
+
 import ida_kernwin
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 from .analyzer import Analyzer
-from .utils import get_module_name, get_tree, get_fwhunt_scan_report
+from .utils import get_fwhunt_scan_report, get_module_name, get_tree
 
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,6 @@
 import logging
 import traceback
+from typing import Any, Optional
 
 import ida_idaapi
 import ida_kernwin
@@ -13,20 +14,20 @@ AUTHOR = "https://github.com/binarly-io/"
 VERSION = "0.0.1"
 DESCRIPTION = "Helper tool for generating FwHunt compliant rules"
 
-# global objects
-g_form: ui.FwHuntForm = None
+g_form: Optional[ui.FwHuntForm] = None
 g_rule: ui.FwHuntRule = ui.FwHuntRule()
 
 logger = logging.getLogger(NAME)
+
 
 # -----------------------------------------------------------------------
 class FwHuntAction(ida_kernwin.action_handler_t):
     """Basic class for FwHunt action"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         ida_kernwin.action_handler_t.__init__(self)
 
-    def update(self, ctx):
+    def update(self, ctx) -> Any:
         if ctx.widget_type == ida_kernwin.BWN_DISASM:
             ida_kernwin.attach_action_to_popup(ctx.widget, None, self.name, "FwHunt/")
             return ida_kernwin.AST_ENABLE_FOR_WIDGET
@@ -36,14 +37,14 @@ class FwHuntAction(ida_kernwin.action_handler_t):
 # -----------------------------------------------------------------------
 class AddEfiGuid(FwHuntAction):
 
-    name = f"AddEfiGuid"
+    name = "AddEfiGuid"
     description = "add GUID to detection rule"
     hotkey = str()
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-    def activate(self, ctx):
+    def activate(self, _ctx) -> bool:
         if g_rule.editor is None:
             return False
 
@@ -65,14 +66,14 @@ class AddEfiGuid(FwHuntAction):
 # -----------------------------------------------------------------------
 class AddAsciiString(FwHuntAction):
 
-    name = f"AddAsciiString"
+    name = "AddAsciiString"
     description = "add ascii string to detection rule"
     hotkey = str()
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-    def activate(self, ctx) -> bool:
+    def activate(self, _ctx) -> bool:
         if g_rule.editor is None:
             return False
 
@@ -100,11 +101,11 @@ class AddAsciiString(FwHuntAction):
 # -----------------------------------------------------------------------
 class AddWideString(FwHuntAction):
 
-    name = f"AddWideString"
+    name = "AddWideString"
     description = "add wide string to detection rule"
     hotkey = str()
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def activate(self, ctx) -> bool:
@@ -135,14 +136,14 @@ class AddWideString(FwHuntAction):
 # -----------------------------------------------------------------------
 class AddHexString(FwHuntAction):
 
-    name = f"AddHexString"
+    name = "AddHexString"
     description = "add hex string to detection rule"
     hotkey = str()
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-    def activate(self, ctx):
+    def activate(self, _ctx) -> bool:
         if g_rule.editor is None:
             return False
 
@@ -162,14 +163,14 @@ class AddHexString(FwHuntAction):
 # -----------------------------------------------------------------------
 class AddCodeSnippet(FwHuntAction):
 
-    name = f"AddCodeSnippet"
+    name = "AddCodeSnippet"
     description = "add code to detection rule"
     hotkey = str()
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-    def activate(self, ctx):
+    def activate(self, _ctx) -> bool:
         if g_rule.editor is None:
             return False
 
@@ -204,20 +205,20 @@ class FwHuntHelper(ida_idaapi.plugin_t):
     wanted_hotkey = str()
 
     @staticmethod
-    def register_action(action, *args):
+    def register_action(action, *args) -> None:
         desc = ida_kernwin.action_desc_t(
             action.name, action.description, action(*args), action.hotkey
         )
         ida_kernwin.register_action(desc)
 
     @staticmethod
-    def init():
+    def init() -> Any:
         ida_kernwin.msg(f"\n{NAME} ({VERSION})\n")
 
         return ida_idaapi.PLUGIN_KEEP
 
     @staticmethod
-    def run(arg):
+    def run(_arg) -> bool:
         global g_form
 
         if g_form is not None:
@@ -237,7 +238,7 @@ class FwHuntHelper(ida_idaapi.plugin_t):
         FwHuntHelper.register_action(AddCodeSnippet)
 
     @staticmethod
-    def term():
+    def term() -> None:
         ida_kernwin.unregister_action(AddEfiGuid.name)
         ida_kernwin.unregister_action(AddAsciiString.name)
         ida_kernwin.unregister_action(AddWideString.name)
@@ -247,7 +248,7 @@ class FwHuntHelper(ida_idaapi.plugin_t):
 
 # -----------------------------------------------------------------------
 # Entry for plugin
-def PLUGIN_ENTRY():
+def PLUGIN_ENTRY() -> Optional[FwHuntHelper]:
     try:
         return FwHuntHelper()
     except Exception as e:
@@ -257,10 +258,10 @@ def PLUGIN_ENTRY():
 
 # -----------------------------------------------------------------------
 # Entry for IDAPyhton script
-def main():
+def main() -> None:
     try:
         FwHuntHelper.init()
-        FwHuntHelper.run(arg=0)
+        FwHuntHelper.run(0)
     except Exception as e:
         logger.error(f"{str(e)}\n{traceback.format_exc()}")
 

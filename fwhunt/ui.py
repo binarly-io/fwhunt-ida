@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sized, Tuple
 
 import ida_kernwin
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -12,12 +12,27 @@ logger = logging.getLogger(__name__)
 
 
 # -----------------------------------------------------------------------
+class FwHuntRulePreview(QtWidgets.QTextEdit):
+    def __init__(self, parent=None) -> None:
+        super(FwHuntRulePreview, self).__init__(parent)
+
+        self.setFont(QtGui.QFont("Courier", weight=QtGui.QFont.Bold))
+        self.setLineWrapMode(QtWidgets.QTextEdit.NoWrap)
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        self.setStyleSheet("border: 2px solid grey")
+
+    def reset_view(self) -> None:
+        self.clear()
+
+    def set_text(self, text) -> None:
+        self.setText(text)
+
+
+# -----------------------------------------------------------------------
 class FwHuntRule:
     """FwHunt rule class"""
 
     def __init__(self) -> None:
-        self.editor: Optional[FwHuntRulePreview] = None
-
         # from IDA
         self._guids: List[Tuple[str, Optional[str]]] = list()
         self._code: List[Tuple[str, Optional[List[str]]]] = list()
@@ -30,7 +45,7 @@ class FwHuntRule:
         self._ppi_list: List[Dict] = list()
         self._nvram_vars: List[Dict] = list()
 
-    def install_editor(self, editor):
+    def install_editor(self, editor: FwHuntRulePreview) -> None:
         # FwHuntRulePreview class object
         # with set_text method
         self.editor = editor
@@ -110,7 +125,7 @@ class FwHuntRule:
             self._ppi_list,
             self._nvram_vars,
         ]:
-            if len(item) > 0:
+            if isinstance(item, Sized) and len(item) > 0:
                 return False
         return True
 
@@ -204,6 +219,8 @@ class FwHuntRule:
             rule_content = f"{rule_content}    and:\n"
             for pattern, code_comments in self._code:
                 rule_content = f"{rule_content}      - pattern: {pattern}\n"
+                if code_comments is None:
+                    continue
                 for comment in code_comments:
                     rule_content = f"{rule_content}          {comment}\n"
 
@@ -219,16 +236,13 @@ class FwHuntRule:
 # Some things are borrowed from capa IDA plugin
 # (https://github.com/fireeye/capa/tree/master/capa/ida/plugin)
 # since the goals in the UI are similar
-class UefiR2Info(QtWidgets.QTreeWidget):
+class FwhuntScanInfo(QtWidgets.QTreeWidget):
     MAX_SECTION_SIZE = 750
 
-    def __init__(self, parent=None):
-        super(UefiR2Info, self).__init__(parent)
-
-        self.rule: FwHuntRule = None
+    def __init__(self, parent=None) -> None:
+        super(FwhuntScanInfo, self).__init__(parent)
 
         self.setHeaderLabels(["Item", "Description"])
-        self.header_font = None
         self._load_header_font()
         self.header().setFont(self.header_font)
         self.setStyleSheet(
@@ -250,7 +264,6 @@ class UefiR2Info(QtWidgets.QTreeWidget):
         self.collapsed.connect(self.slot_resize_columns_to_content)
 
         # Font
-        self.item_font = None
         self._load_item_font()
 
         # Data loaded from JSON
@@ -258,13 +271,13 @@ class UefiR2Info(QtWidgets.QTreeWidget):
 
         self.reset_view()
 
-    def install_rule(self, rule):
+    def install_rule(self, rule) -> None:
         self.rule = rule
 
-    def resize_columns_to_content(self):
+    def resize_columns_to_content(self) -> None:
         self.header().resizeSections(QtWidgets.QHeaderView.ResizeToContents)
-        if self.header().sectionSize(0) > UefiR2Info.MAX_SECTION_SIZE:
-            self.header().resizeSection(0, UefiR2Info.MAX_SECTION_SIZE)
+        if self.header().sectionSize(0) > FwhuntScanInfo.MAX_SECTION_SIZE:
+            self.header().resizeSection(0, FwhuntScanInfo.MAX_SECTION_SIZE)
 
     def slot_item_double_clicked(self) -> bool:
         """Hanlder for item double clicked action"""
@@ -328,7 +341,7 @@ class UefiR2Info(QtWidgets.QTreeWidget):
 
         return True
 
-    def build_action(self, o, display, data, slot):
+    def build_action(self, o, display, data, slot) -> QtWidgets.QAction:
         action = QtWidgets.QAction(display, o)
 
         action.setData(data)
@@ -336,7 +349,7 @@ class UefiR2Info(QtWidgets.QTreeWidget):
 
         return action
 
-    def build_context_menu(self, o, actions):
+    def build_context_menu(self, o, actions) -> QtWidgets.QMenu:
         menu = QtWidgets.QMenu()
 
         for action in actions:
@@ -402,22 +415,22 @@ class UefiR2Info(QtWidgets.QTreeWidget):
 
         return True
 
-    def slot_resize_columns_to_content(self):
+    def slot_resize_columns_to_content(self) -> None:
         """Handler for resize columns to content action"""
 
         logger.info("Resize columns to content")
         self.resize_columns_to_content()
 
-    def _load_header_font(self):
+    def _load_header_font(self) -> None:
         self.header_font = QtGui.QFont("Courier")
         self.header_font.setBold(True)
         self.header_font.setPointSize(13)
 
-    def _load_item_font(self):
+    def _load_item_font(self) -> None:
         self.item_font = QtGui.QFont("Courier")
         self.item_font.setPointSize(13)
 
-    def _add_item(self, name, value, parent):
+    def _add_item(self, name, value, parent) -> None:
         item = QtWidgets.QTreeWidgetItem(parent)
         item.setText(0, f"{name}: {value}")
         item.setFont(0, self.item_font)
@@ -425,7 +438,7 @@ class UefiR2Info(QtWidgets.QTreeWidget):
             0, 0x100, {f"child_{name}": value}
         )  # add child_ prefix to distinguish from parent data
 
-    def _load_ppi_list(self, info):
+    def _load_ppi_list(self, info) -> None:
         parent_item = QtWidgets.QTreeWidgetItem()
         parent_item.setText(0, "ppi_list")
         parent_item.setText(1, "List of PPI")
@@ -447,7 +460,7 @@ class UefiR2Info(QtWidgets.QTreeWidget):
             self._add_item("value", element["value"], child_item)
             self._add_item("service", element["service"], child_item)
 
-    def _load_guids(self, info):
+    def _load_guids(self, info) -> None:
         parent_item = QtWidgets.QTreeWidgetItem()
         parent_item.setText(0, "guids")
         parent_item.setText(1, "List of GUIDs")
@@ -468,7 +481,7 @@ class UefiR2Info(QtWidgets.QTreeWidget):
             self._add_item("name", element["name"], child_item)
             self._add_item("value", element["value"], child_item)
 
-    def _load_protocols(self, info):
+    def _load_protocols(self, info) -> None:
         parent_item = QtWidgets.QTreeWidgetItem()
         parent_item.setText(0, "protocols")
         parent_item.setText(1, "List of protocols")
@@ -490,7 +503,7 @@ class UefiR2Info(QtWidgets.QTreeWidget):
             self._add_item("value", element["value"], child_item)
             self._add_item("service", element["service"], child_item)
 
-    def _load_nvram_vars(self, info):
+    def _load_nvram_vars(self, info) -> None:
         parent_item = QtWidgets.QTreeWidgetItem()
         parent_item.setText(0, "nvram_vars")
         parent_item.setText(1, "List of NVRAM variables")
@@ -532,12 +545,12 @@ class UefiR2Info(QtWidgets.QTreeWidget):
 
         return True
 
-    def update_search(self, search_data: list):
+    def update_search(self, search_data: list) -> None:
         """Update tree content (with new data from search query)"""
 
         self.reset_view()
 
-        tree = dict(
+        tree: Dict[str, List[Any]] = dict(
             {
                 "ppi_list": list(),
                 "p_guids": list(),
@@ -548,7 +561,7 @@ class UefiR2Info(QtWidgets.QTreeWidget):
 
         # generate tree right format
         # (to avoid this we need to change the format in the
-        # uefi_f2 analysis report)
+        # fwhunt_scan analysis report)
         for data in search_data:
             if "guid" in data:
                 if data["guid"] not in tree["p_guids"]:
@@ -572,51 +585,27 @@ class UefiR2Info(QtWidgets.QTreeWidget):
 
         self._load_tree(tree)
 
-    def update_tree(self):
+    def update_tree(self) -> None:
         """Update tree content (with new data from fwhunt-scan analysis result)"""
 
         self.reset_view()
         self._load_tree(self.tree)
 
-    def reset_view(self):
+    def reset_view(self) -> None:
         self.clear()
-
-
-# -----------------------------------------------------------------------
-class FwHuntRulePreview(QtWidgets.QTextEdit):
-    def __init__(self, parent=None):
-        super(FwHuntRulePreview, self).__init__(parent)
-
-        self.setFont(QtGui.QFont("Courier", weight=QtGui.QFont.Bold))
-        self.setLineWrapMode(QtWidgets.QTextEdit.NoWrap)
-        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-        self.setStyleSheet("border: 2px solid grey")
-
-    def reset_view(self):
-        self.clear()
-
-    def set_text(self, text):
-        self.setText(text)
 
 
 # -----------------------------------------------------------------------
 class FwHuntForm(ida_kernwin.PluginForm):
     """Main form for FwHunt rule"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super(FwHuntForm, self).__init__()
 
         # Tree and editor
-        self.rule_preview: FwHuntRulePreview = None
-        self.fwhunt_scan_info: UefiR2Info = None
-        self._main_elements = None  # QtWidgets.QHBoxLayout
-
-        # Labels font
-        self.font = None  # QtGui.QFont
-
-        # Labels
-        self.label_info = None  # QtWidgets.QLabel
-        self.label_preview = None  # QtWidgets.QLabel
+        self._main_elements: Optional[
+            QtWidgets.QHBoxLayout
+        ] = None  # QtWidgets.QHBoxLayout
 
         # Search box
         self.search = None  # QtWidgets.QLineEdit
@@ -629,9 +618,9 @@ class FwHuntForm(ida_kernwin.PluginForm):
         self.buttons = None  # QtWidgets.QHBoxLayout
 
         # GUIDs addresses (for jumps)
-        self.guids: dict = Optional[Dict[str, int]]
+        self.guids: Optional[Dict[str, int]] = dict()
 
-    def OnCreate(self, form):
+    def OnCreate(self, form) -> None:
         """Called when the widget is created"""
 
         # Get parent widget
@@ -639,7 +628,7 @@ class FwHuntForm(ida_kernwin.PluginForm):
 
         # Init tree and editor
         self.rule_preview = FwHuntRulePreview(parent=self.parent)
-        self.fwhunt_scan_info = UefiR2Info(parent=self.parent)
+        self.fwhunt_scan_info = FwhuntScanInfo(parent=self.parent)
 
         # Add all elements to form
         self._load_buttons()
@@ -650,12 +639,12 @@ class FwHuntForm(ida_kernwin.PluginForm):
         self._load_main_elements()
         self._load_parent()
 
-    def ask_json_file(self):
+    def ask_json_file(self) -> None:
         return QtWidgets.QFileDialog.getSaveFileName(
             None, "Select JSON file with fwhunt-scan analysis result", "", "*.json"
         )[0]
 
-    def ask_yml_file(self):
+    def ask_yml_file(self) -> str:
         return QtWidgets.QFileDialog.getSaveFileName(
             None, "Select a location to save FwHunt rule file", "", "*.yml"
         )[0]
@@ -711,7 +700,7 @@ class FwHuntForm(ida_kernwin.PluginForm):
 
         return True
 
-    def slot_reset(self):
+    def slot_reset(self) -> None:
         """Reset button handler"""
 
         logger.info("Reset button handler")
@@ -763,14 +752,14 @@ class FwHuntForm(ida_kernwin.PluginForm):
 
         return True
 
-    def _load_search(self):
+    def _load_search(self) -> None:
         line = QtWidgets.QLineEdit()
         line.setPlaceholderText("search...")
         line.textChanged.connect(self.slot_search)
 
         self.search = line
 
-    def _load_buttons(self):
+    def _load_buttons(self) -> None:
         load_button = QtWidgets.QPushButton("Load")
         scan_button = QtWidgets.QPushButton("Scan")
         reset_button = QtWidgets.QPushButton("Reset")
@@ -794,24 +783,24 @@ class FwHuntForm(ida_kernwin.PluginForm):
         self.button_save = save_button
         self.buttons = layout
 
-    def _load_font(self):
+    def _load_font(self) -> None:
         self.font = QtGui.QFont()
         self.font.setBold(True)
         self.font.setPointSize(12)
 
-    def _load_label_preview(self):
+    def _load_label_preview(self) -> None:
         self.label_preview = QtWidgets.QLabel()
         self.label_preview.setAlignment(QtCore.Qt.AlignCenter)
         self.label_preview.setText("FwHunt rule preview")
         self.label_preview.setFont(self.font)
 
-    def _load_label_info(self):
+    def _load_label_info(self) -> None:
         self.label_info = QtWidgets.QLabel()
         self.label_info.setAlignment(QtCore.Qt.AlignCenter)
         self.label_info.setText("fwhunt-scan analysis result")
         self.label_info.setFont(self.font)
 
-    def _load_main_elements(self):
+    def _load_main_elements(self) -> None:
         layout = QtWidgets.QHBoxLayout()
 
         splitter_preview = QtWidgets.QSplitter(QtCore.Qt.Vertical)
@@ -835,13 +824,13 @@ class FwHuntForm(ida_kernwin.PluginForm):
 
         self.main_elements = layout
 
-    def _load_parent(self):
+    def _load_parent(self) -> None:
         layout = QtWidgets.QVBoxLayout()
 
         layout.addLayout(self.main_elements)
         layout.addLayout(self.buttons)
         self.parent.setLayout(layout)
 
-    def OnClose(self, form):
+    def OnClose(self, _form) -> None:
         """Called when the widget is closed"""
         pass

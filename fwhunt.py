@@ -11,7 +11,7 @@ from fwhunt import ui, utils
 NAME = "FwHunt"
 AUTHOR = "https://github.com/binarly-io/"
 
-VERSION = "0.0.1"
+VERSION = "1.0.0"
 DESCRIPTION = "Helper tool for generating FwHunt compliant rules"
 
 g_form: Optional[ui.FwHuntForm] = None

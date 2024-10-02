@@ -603,9 +603,9 @@ class FwHuntForm(ida_kernwin.PluginForm):
         super(FwHuntForm, self).__init__()
 
         # Tree and editor
-        self._main_elements: Optional[
-            QtWidgets.QHBoxLayout
-        ] = None  # QtWidgets.QHBoxLayout
+        self._main_elements: Optional[QtWidgets.QHBoxLayout] = (
+            None  # QtWidgets.QHBoxLayout
+        )
 
         # Search box
         self.search = None  # QtWidgets.QLineEdit

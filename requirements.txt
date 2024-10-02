@@ -1,1 +1,1 @@
-fwhunt-scan
+fwhunt-scan~=2.3.5

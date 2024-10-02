@@ -202,7 +202,7 @@ class FwHuntHelper(ida_idaapi.plugin_t):
     comment = DESCRIPTION
     help = DESCRIPTION
     wanted_name = NAME
-    wanted_hotkey = str()
+    wanted_hotkey = "Ctrl+Alt+F"
 
     @staticmethod
     def register_action(action, *args) -> None:

@@ -2,9 +2,10 @@ import logging
 import uuid
 from typing import Optional
 
-import ida_bytes
 import ida_idaapi
 import ida_segment
+
+from .utils import find_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +46,7 @@ class Analyzer:
         end_ea = seg.end_ea
 
         while True:
-            ea = ida_bytes.bin_search(
-                start_ea, end_ea, data, None, ida_bytes.BIN_SEARCH_FORWARD, 0
-            )
-
+            ea = find_bytes(start_ea, end_ea, data)
             if ea == ida_idaapi.BADADDR:
                 break
 

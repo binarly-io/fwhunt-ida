@@ -11,7 +11,7 @@ from fwhunt import ui, utils
 NAME = "FwHunt"
 AUTHOR = "https://github.com/binarly-io/"
 
-VERSION = "0.0.1"
+VERSION = "1.0.0"
 DESCRIPTION = "Helper tool for generating FwHunt compliant rules"
 
 g_form: Optional[ui.FwHuntForm] = None
@@ -202,7 +202,7 @@ class FwHuntHelper(ida_idaapi.plugin_t):
     comment = DESCRIPTION
     help = DESCRIPTION
     wanted_name = NAME
-    wanted_hotkey = str()
+    wanted_hotkey = "Ctrl+Alt+F"
 
     @staticmethod
     def register_action(action, *args) -> None:

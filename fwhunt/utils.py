@@ -273,3 +273,20 @@ def get_fwhunt_scan_report() -> Optional[dict]:
 
     uefi_analyzer = UefiAnalyzer(image_path=filename)
     return uefi_analyzer.get_summary()
+
+
+def find_bytes(start_ea: int, end_ea: int, data: bytes) -> int:
+    """
+    bin_search/find_bytes wrapper
+
+    @return: location or ida_idaapi.BADADDR
+    """
+
+    if idaapi.IDA_SDK_VERSION < 900:
+        return ida_bytes.bin_search(
+            start_ea, end_ea, data, None, ida_bytes.BIN_SEARCH_FORWARD, 0
+        )
+
+    return ida_bytes.find_bytes(
+        data, start_ea, None, end_ea, None, ida_bytes.BIN_SEARCH_FORWARD
+    )

@@ -280,7 +280,7 @@ def get_fwhunt_scan_report() -> Optional[dict]:
 
     filename = idaapi.get_input_file_path()
     if not os.path.isfile(filename):
-        logger.error("Couldn't fild file to analyze")
+        logger.error("Couldn't find file to analyze")
         return None
 
     uefi_analyzer = FwhuntAnalyzer(image_path=filename)

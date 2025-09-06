@@ -19,8 +19,8 @@ try:
     from fwhunt_scan import UefiAnalyzer
 
     FwhuntAnalyzer = UefiAnalyzer
-except ImportError:
-    logger.error("Unable to import UefiAnalyzer from fwhunt_scan")
+except (ImportError, ModuleNotFoundError):
+    logger.warning("Unable to import UefiAnalyzer from fwhunt_scan")
 
 
 def get_guid_value(ea: int) -> Optional[str]:

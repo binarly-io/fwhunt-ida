@@ -10,9 +10,17 @@ import ida_idaapi
 import ida_ua
 import idaapi
 import idc
-from fwhunt_scan import UefiAnalyzer
 
 logger = logging.getLogger(__name__)
+
+FwhuntAnalyzer: Optional[type] = None
+
+try:
+    from fwhunt_scan import UefiAnalyzer
+
+    FwhuntAnalyzer = UefiAnalyzer
+except ImportError:
+    logger.error("Unable to import UefiAnalyzer from fwhunt_scan")
 
 
 def get_guid_value(ea: int) -> Optional[str]:
@@ -266,12 +274,16 @@ def get_fwhunt_scan_report() -> Optional[dict]:
     @return: fwhunt-scan report for the current file or None
     """
 
-    filename = idaapi.get_input_file_path()
-    if not os.path.isfile(filename):
-        logger.error("couldn't fild file to analyze")
+    if FwhuntAnalyzer is None:
+        logger.error("Couldn't scan because fwhunt-scan is not installed")
         return None
 
-    uefi_analyzer = UefiAnalyzer(image_path=filename)
+    filename = idaapi.get_input_file_path()
+    if not os.path.isfile(filename):
+        logger.error("Couldn't fild file to analyze")
+        return None
+
+    uefi_analyzer = FwhuntAnalyzer(image_path=filename)
     return uefi_analyzer.get_summary()
 
 

@@ -30,7 +30,7 @@ share/python-wheels/
 MANIFEST
 
 # Directories
-.vscode/
-test/
-rules/
 .DS_Store
+.vscode/
+rules/
+test/

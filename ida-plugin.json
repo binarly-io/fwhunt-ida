@@ -1,0 +1,29 @@
+{
+  "IDAMetadataDescriptorVersion": 1,
+  "plugin": {
+    "name": "fwhunt-ida",
+    "entryPoint": "fwhunt.py",
+    "version": "1.0.1",
+    "idaVersions": ">=8.3",
+    "urls": {
+      "repository": "https://github.com/binarly-io/fwhunt-ida"
+    },
+    "authors": [
+      {
+        "name": "yeggor",
+        "email": "yv@yegor.cc"
+      }
+    ],
+    "description": "Helper plugin for generating FwHunt compliant rules in IDA",
+    "platforms": [
+      "windows-x86_64",
+      "linux-x86_64",
+      "macos-x86_64",
+      "macos-aarch64"
+    ],
+    "license": "MIT OR Apache-2.0",
+    "categories": ["ui-ux-and-visualization"],
+    "keywords": ["firmware", "fwhunt", "uefi", "efi"],
+    "pythonDependencies": ["fwhunt-scan~=2.3.5"]
+  }
+}

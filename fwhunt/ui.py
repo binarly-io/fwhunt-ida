@@ -3,7 +3,7 @@ import logging
 from typing import Any, Dict, List, Optional, Sized, Tuple
 
 import ida_kernwin
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from .analyzer import Analyzer
 from .utils import get_fwhunt_scan_report, get_module_name, get_tree
@@ -341,8 +341,8 @@ class FwhuntScanInfo(QtWidgets.QTreeWidget):
 
         return True
 
-    def build_action(self, o, display, data, slot) -> QtWidgets.QAction:
-        action = QtWidgets.QAction(display, o)
+    def build_action(self, o, display, data, slot) -> QtGui.QAction:
+        action = QtGui.QAction(display, o)
 
         action.setData(data)
         action.triggered.connect(lambda checked: slot(action))

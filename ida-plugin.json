@@ -4,7 +4,7 @@
     "name": "fwhunt-ida",
     "entryPoint": "fwhunt.py",
     "version": "1.0.2",
-    "idaVersions": ">=9.0",
+    "idaVersions": ">=9.2",
     "urls": {
       "repository": "https://github.com/binarly-io/fwhunt-ida"
     },

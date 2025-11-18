@@ -8,10 +8,9 @@ import idc
 
 from fwhunt import ui, utils
 
-NAME = "FwHunt"
-AUTHOR = "https://github.com/binarly-io/"
+__version__ = "1.0.2"
 
-VERSION = "1.0.1"
+NAME = "fwhunt-ida"
 DESCRIPTION = "Helper tool for generating FwHunt compliant rules"
 
 g_form: Optional[ui.FwHuntForm] = None
@@ -36,7 +35,6 @@ class FwHuntAction(ida_kernwin.action_handler_t):
 
 # -----------------------------------------------------------------------
 class AddEfiGuid(FwHuntAction):
-
     name = "AddEfiGuid"
     description = "add GUID to detection rule"
     hotkey = str()
@@ -65,7 +63,6 @@ class AddEfiGuid(FwHuntAction):
 
 # -----------------------------------------------------------------------
 class AddAsciiString(FwHuntAction):
-
     name = "AddAsciiString"
     description = "add ascii string to detection rule"
     hotkey = str()
@@ -100,7 +97,6 @@ class AddAsciiString(FwHuntAction):
 
 # -----------------------------------------------------------------------
 class AddWideString(FwHuntAction):
-
     name = "AddWideString"
     description = "add wide string to detection rule"
     hotkey = str()
@@ -135,7 +131,6 @@ class AddWideString(FwHuntAction):
 
 # -----------------------------------------------------------------------
 class AddHexString(FwHuntAction):
-
     name = "AddHexString"
     description = "add hex string to detection rule"
     hotkey = str()
@@ -162,7 +157,6 @@ class AddHexString(FwHuntAction):
 
 # -----------------------------------------------------------------------
 class AddCodeSnippet(FwHuntAction):
-
     name = "AddCodeSnippet"
     description = "add code to detection rule"
     hotkey = str()
@@ -212,13 +206,13 @@ class FwHuntHelper(ida_idaapi.plugin_t):
         ida_kernwin.register_action(desc)
 
     @staticmethod
-    def init() -> Any:
-        ida_kernwin.msg(f"\n{NAME} ({VERSION})\n")
+    def init() -> int:
+        ida_kernwin.msg(f"\n{NAME} ({__version__})\n")
 
         return ida_idaapi.PLUGIN_KEEP
 
     @staticmethod
-    def run(_arg) -> bool:
+    def run(_arg) -> None:
         global g_form
 
         if g_form is not None:
